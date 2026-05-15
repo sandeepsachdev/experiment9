@@ -73,9 +73,9 @@
             x: carrier.x, y: carrier.y - 50,
             vx: 0, vy: 0,
             heading: -Math.PI / 2,
-            hp: 100, maxHp: 100,
-            ammo: 30, maxAmmo: 30,
-            bombs: 8, maxBombs: 8,
+            hp: 150, maxHp: 150,
+            ammo: 80, maxAmmo: 80,
+            bombs: 18, maxBombs: 18,
             cooldown: 0,
             bombCooldown: 0,
             radius: 12,
@@ -85,33 +85,31 @@
 
         islands = buildIslands();
         factories = islands.filter(i => i.factory).map(i => ({
-            x: i.x, y: i.y - 5, hp: 6, island: i, fireCooldown: rand(2, 4),
+            x: i.x, y: i.y - 5, hp: 3, island: i, fireCooldown: rand(4, 7),
         }));
 
-        // AA guns on each island
+        // AA guns only on factory islands (one each)
         for (const isl of islands) {
-            const count = isl.factory ? 2 : 1;
-            for (let i = 0; i < count; i++) {
-                enemies.push({
-                    type: 'aa',
-                    x: isl.x + rand(-isl.r * 0.6, isl.r * 0.6),
-                    y: isl.y + rand(-isl.r * 0.6, isl.r * 0.6),
-                    hp: 2,
-                    cooldown: rand(1, 3),
-                });
-            }
+            if (!isl.factory) continue;
+            enemies.push({
+                type: 'aa',
+                x: isl.x + rand(-isl.r * 0.5, isl.r * 0.5),
+                y: isl.y + rand(-isl.r * 0.5, isl.r * 0.5),
+                hp: 1,
+                cooldown: rand(2, 4),
+            });
         }
 
-        // Patrol ships
-        for (let i = 0; i < 6; i++) {
+        // Patrol ships (fewer, slower fire)
+        for (let i = 0; i < 3; i++) {
             enemies.push({
                 type: 'ship',
                 x: rand(200, WORLD_W - 200),
                 y: rand(200, WORLD_H - 200),
-                vx: rand(-0.4, 0.4),
-                vy: rand(-0.4, 0.4),
-                hp: 3,
-                cooldown: rand(2, 5),
+                vx: rand(-0.3, 0.3),
+                vy: rand(-0.3, 0.3),
+                hp: 2,
+                cooldown: rand(3, 6),
             });
         }
     }
@@ -145,9 +143,9 @@
     // ---------- Update ----------
     function update(dt) {
         timeAlive += dt;
-        // Threat grows faster the more factories remain
+        // Threat grows faster the more factories remain (gentle pace)
         const remaining = factories.length;
-        threat += dt * (0.4 + remaining * 0.35);
+        threat += dt * (0.05 + remaining * 0.08);
         if (threat >= 100) {
             return gameOver('THE DOOMSDAY WEAPON HAS LAUNCHED', false);
         }
@@ -223,12 +221,12 @@
             bombs.push({
                 x: player.x, y: player.y,
                 vx: player.vx * 0.4, vy: player.vy * 0.4,
-                fuse: 0.9,
+                fuse: 0.5,
                 radius: 4,
-                blast: 70,
+                blast: 95,
             });
             player.bombs -= 1;
-            player.bombCooldown = 0.4;
+            player.bombCooldown = 0.3;
         }
 
         // Rearm if on carrier
@@ -237,11 +235,11 @@
                           sp < 40;
         if (onCarrier) {
             player.rearmTimer += dt;
-            if (player.rearmTimer > 0.5) {
+            if (player.rearmTimer > 0.25) {
                 player.rearmTimer = 0;
-                if (player.hp < player.maxHp) player.hp = Math.min(player.maxHp, player.hp + 8);
-                if (player.ammo < player.maxAmmo) player.ammo = Math.min(player.maxAmmo, player.ammo + 6);
-                if (player.bombs < player.maxBombs) player.bombs = Math.min(player.maxBombs, player.bombs + 1);
+                if (player.hp < player.maxHp) player.hp = Math.min(player.maxHp, player.hp + 20);
+                if (player.ammo < player.maxAmmo) player.ammo = Math.min(player.maxAmmo, player.ammo + 15);
+                if (player.bombs < player.maxBombs) player.bombs = Math.min(player.maxBombs, player.bombs + 3);
                 addPopup(player.x, player.y - 20, 'REARM', '#7fffa0');
             }
             player.landed = true;
@@ -261,9 +259,9 @@
             if (e.type === 'aa') {
                 e.cooldown -= dt;
                 const d = dist(e, player);
-                if (d < 280 && e.cooldown <= 0) {
-                    fireAt(e, player, 220, 'enemy', 8, 1);
-                    e.cooldown = rand(1.3, 2.5);
+                if (d < 220 && e.cooldown <= 0) {
+                    fireAt(e, player, 160, 'enemy', 3, 1);
+                    e.cooldown = rand(2.8, 4.5);
                 }
             } else if (e.type === 'ship') {
                 e.x += e.vx * dt * 30;
@@ -272,21 +270,21 @@
                 if (e.y < 100 || e.y > WORLD_H - 100) e.vy *= -1;
                 e.cooldown -= dt;
                 const d = dist(e, player);
-                if (d < 350 && e.cooldown <= 0) {
-                    fireAt(e, player, 200, 'enemy', 6, 1);
-                    e.cooldown = rand(1.8, 3.2);
+                if (d < 280 && e.cooldown <= 0) {
+                    fireAt(e, player, 150, 'enemy', 2, 1);
+                    e.cooldown = rand(3.2, 5.5);
                 }
             } else if (e.type === 'jet') {
                 // Pursuit
                 const ang = Math.atan2(player.y - e.y, player.x - e.x);
-                e.vx = Math.cos(ang) * 140;
-                e.vy = Math.sin(ang) * 140;
+                e.vx = Math.cos(ang) * 95;
+                e.vy = Math.sin(ang) * 95;
                 e.x += e.vx * dt;
                 e.y += e.vy * dt;
                 e.cooldown -= dt;
-                if (e.cooldown <= 0 && dist(e, player) < 500) {
-                    fireAt(e, player, 320, 'enemy', 10, 1);
-                    e.cooldown = rand(1.2, 2.0);
+                if (e.cooldown <= 0 && dist(e, player) < 420) {
+                    fireAt(e, player, 220, 'enemy', 3, 1);
+                    e.cooldown = rand(2.0, 3.0);
                 }
                 e.life -= dt;
                 if (e.life <= 0) e.hp = 0;
@@ -298,17 +296,17 @@
         for (const f of factories) {
             f.fireCooldown -= dt;
             if (f.fireCooldown <= 0) {
-                if (threat > 30 && enemies.filter(e => e.type === 'jet').length < 3) {
+                if (threat > 55 && enemies.filter(e => e.type === 'jet').length < 1) {
                     enemies.push({
                         type: 'jet',
                         x: f.x, y: f.y,
                         vx: 0, vy: 0,
-                        hp: 2,
-                        cooldown: 0.8,
-                        life: 20,
+                        hp: 1,
+                        cooldown: 1.2,
+                        life: 14,
                     });
                 }
-                f.fireCooldown = rand(6, 12) - threat * 0.04;
+                f.fireCooldown = rand(14, 22);
             }
         }
     }
@@ -332,10 +330,12 @@
             b.life -= dt;
 
             if (b.from === 'player') {
+                let hit = false;
                 for (const e of enemies) {
                     if (dist(b, e) < 14) {
                         e.hp -= b.dmg;
                         b.life = 0;
+                        hit = true;
                         spark(b.x, b.y, '#ffae3b');
                         if (e.hp <= 0) {
                             score += e.type === 'jet' ? 250 : (e.type === 'ship' ? 200 : 100);
@@ -344,18 +344,28 @@
                         break;
                     }
                 }
-                // Bullets damage factories lightly
-                for (const f of factories) {
-                    if (dist(b, f) < 28) {
-                        b.life = 0;
-                        spark(b.x, b.y, '#ffae3b');
-                        // No factory damage from bullets (need bombs)
-                        break;
+                // Bullets chip factories (small damage; bombs still primary)
+                if (!hit) {
+                    for (let i = factories.length - 1; i >= 0; i--) {
+                        const f = factories[i];
+                        if (dist(b, f) < 28) {
+                            b.life = 0;
+                            f.hp -= 0.25;
+                            spark(b.x, b.y, '#ffae3b');
+                            if (f.hp <= 0) {
+                                factories.splice(i, 1);
+                                score += 1000;
+                                threat = Math.max(0, threat - 12);
+                                bigExplode(f.x, f.y);
+                                addPopup(f.x, f.y - 30, 'FACTORY DOWN +1000', '#7fffa0');
+                            }
+                            break;
+                        }
                     }
                 }
             } else {
                 if (dist(b, player) < player.radius && !player.landed) {
-                    player.hp -= b.dmg * 6;
+                    player.hp -= b.dmg;
                     b.life = 0;
                     spark(player.x, player.y, '#ff5050');
                     if (player.hp <= 0) {
@@ -393,7 +403,7 @@
                 if (f.hp <= 0) {
                     factories.splice(i, 1);
                     score += 1000;
-                    threat = Math.max(0, threat - 8);
+                    threat = Math.max(0, threat - 12);
                     bigExplode(f.x, f.y);
                     addPopup(f.x, f.y - 30, 'FACTORY DOWN +1000', '#7fffa0');
                 }
@@ -409,9 +419,9 @@
                 }
             }
         }
-        // Self damage if you bomb yourself
+        // Self damage if you bomb yourself (gentle nudge, won't kill from full HP)
         if (dist(b, player) < b.blast && !player.landed) {
-            player.hp -= 25;
+            player.hp -= 8;
             if (player.hp <= 0) {
                 explode(player.x, player.y, 2.0);
                 return gameOver('YOU WERE CAUGHT IN YOUR OWN BLAST', false);
@@ -629,11 +639,11 @@
         ctx.fillRect(8, -28, 6, 12);
         // Damage indicator
         ctx.fillStyle = '#ff4030';
-        ctx.fillRect(-22, 20, 44 * (f.hp / 6), 3);
+        ctx.fillRect(-22, 20, 44 * clamp(f.hp / 3, 0, 1), 3);
         ctx.strokeStyle = '#222';
         ctx.strokeRect(-22, 20, 44, 3);
         // Smoke if damaged
-        if (f.hp < 4) {
+        if (f.hp < 2) {
             ctx.fillStyle = 'rgba(60, 60, 60, 0.6)';
             const t = timeAlive * 3;
             ctx.beginPath();
