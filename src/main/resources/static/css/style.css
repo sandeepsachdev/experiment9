@@ -97,53 +97,57 @@ canvas#minimap {
     height: 160px;
 }
 
-/* ---- Touch controls ---- */
+/* ---- Touch controls (pinned to viewport, always visible on touch devices) ---- */
 #touch-controls {
-    position: absolute;
-    left: 0; right: 0; bottom: 0; top: 0;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
     pointer-events: none;
     display: none;
+    z-index: 1000;
 }
 #joystick {
-    position: absolute;
-    left: 16px;
-    bottom: 16px;
-    width: 130px;
-    height: 130px;
+    position: fixed;
+    left: calc(16px + env(safe-area-inset-left, 0px));
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    width: 140px;
+    height: 140px;
     border-radius: 50%;
-    background: rgba(10, 26, 51, 0.55);
-    border: 2px solid rgba(255, 216, 74, 0.6);
+    background: rgba(10, 26, 51, 0.7);
+    border: 3px solid rgba(255, 216, 74, 0.85);
+    box-shadow: 0 0 16px rgba(0, 0, 0, 0.5);
     pointer-events: auto;
     touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
 }
 #joystick-knob {
     position: absolute;
     left: 50%; top: 50%;
-    width: 60px;
-    height: 60px;
-    margin-left: -30px;
-    margin-top: -30px;
+    width: 64px;
+    height: 64px;
+    margin-left: -32px;
+    margin-top: -32px;
     border-radius: 50%;
-    background: rgba(255, 216, 74, 0.85);
-    box-shadow: 0 0 12px rgba(255, 216, 74, 0.6);
+    background: rgba(255, 216, 74, 0.9);
+    box-shadow: 0 0 14px rgba(255, 216, 74, 0.7);
     transition: transform 0.05s linear;
     pointer-events: none;
 }
 #touch-buttons {
-    position: absolute;
-    right: 16px;
-    bottom: 16px;
+    position: fixed;
+    right: calc(16px + env(safe-area-inset-right, 0px));
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
     pointer-events: auto;
 }
 .touch-btn {
-    width: 88px;
-    height: 88px;
+    width: 92px;
+    height: 92px;
     border-radius: 50%;
-    background: rgba(10, 26, 51, 0.65);
-    border: 2px solid #ffd84a;
+    background: rgba(10, 26, 51, 0.75);
+    border: 3px solid #ffd84a;
     color: #ffd84a;
     font-family: inherit;
     font-weight: bold;
@@ -152,23 +156,27 @@ canvas#minimap {
     cursor: pointer;
     touch-action: none;
     pointer-events: auto;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    box-shadow: 0 0 14px rgba(0, 0, 0, 0.5);
 }
 .touch-btn.pressed {
-    background: rgba(255, 216, 74, 0.7);
+    background: rgba(255, 216, 74, 0.85);
     color: #02050d;
     transform: scale(0.95);
 }
 #btn-fire { border-color: #ff8060; color: #ff8060; }
-#btn-fire.pressed { background: rgba(255, 128, 96, 0.75); color: #02050d; }
+#btn-fire.pressed { background: rgba(255, 128, 96, 0.85); color: #02050d; }
 .touch-btn-small {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    width: 36px;
-    height: 36px;
+    position: fixed;
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    left: calc(8px + env(safe-area-inset-left, 0px));
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: rgba(10, 26, 51, 0.7);
-    border: 1px solid #8ea7d1;
+    background: rgba(10, 26, 51, 0.85);
+    border: 2px solid #8ea7d1;
     color: #d6e4ff;
     font-family: inherit;
     font-weight: bold;
@@ -176,9 +184,11 @@ canvas#minimap {
     touch-action: none;
     pointer-events: auto;
     padding: 0;
+    -webkit-tap-highlight-color: transparent;
 }
 
-/* Show touch controls on touch devices or narrow screens */
+/* Show touch controls on touch devices (JS class) or by media query */
+html.touch-device #touch-controls { display: block; }
 @media (hover: none) and (pointer: coarse), (max-width: 720px) {
     #touch-controls { display: block; }
 }

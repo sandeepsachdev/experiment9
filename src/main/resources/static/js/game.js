@@ -40,19 +40,31 @@
     // ---- Touch controls (joystick + buttons) ----
     initTouchControls();
 
+    function isTouchDevice() {
+        return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    }
+
     function initTouchControls() {
+        if (isTouchDevice()) {
+            document.documentElement.classList.add('touch-device');
+        }
+
         const joy = document.getElementById('joystick');
         const knob = document.getElementById('joystick-knob');
-        let joyPointerId = null;
+        let joyActive = false;
         let joyCenter = null;
-        const MAX_KNOB = 45;
+        const MAX_KNOB = 48;
         const MOVE_THRESHOLD = 12;
 
         function clearJoyKeys() {
             keys['w'] = false; keys['a'] = false; keys['s'] = false; keys['d'] = false;
         }
-
+        function recomputeCenter() {
+            const r = joy.getBoundingClientRect();
+            joyCenter = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+        }
         function updateJoy(clientX, clientY) {
+            if (!joyCenter) recomputeCenter();
             const dx = clientX - joyCenter.x;
             const dy = clientY - joyCenter.y;
             const len = Math.hypot(dx, dy);
@@ -64,60 +76,75 @@
             keys['a'] = dx < -MOVE_THRESHOLD;
             keys['d'] = dx >  MOVE_THRESHOLD;
         }
+        function endJoy() {
+            joyActive = false;
+            knob.style.transform = '';
+            clearJoyKeys();
+        }
 
+        // Pointer events (desktop mouse + many mobile browsers)
         joy.addEventListener('pointerdown', e => {
-            joyPointerId = e.pointerId;
-            joy.setPointerCapture(e.pointerId);
-            const r = joy.getBoundingClientRect();
-            joyCenter = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+            joyActive = true;
+            try { joy.setPointerCapture(e.pointerId); } catch (_) {}
+            recomputeCenter();
             updateJoy(e.clientX, e.clientY);
             e.preventDefault();
         });
         joy.addEventListener('pointermove', e => {
-            if (e.pointerId !== joyPointerId) return;
+            if (!joyActive) return;
             updateJoy(e.clientX, e.clientY);
             e.preventDefault();
         });
-        function endJoy(e) {
-            if (e.pointerId !== joyPointerId) return;
-            joyPointerId = null;
-            knob.style.transform = '';
-            clearJoyKeys();
-        }
-        joy.addEventListener('pointerup', endJoy);
+        joy.addEventListener('pointerup',     endJoy);
         joy.addEventListener('pointercancel', endJoy);
-        joy.addEventListener('pointerleave', endJoy);
 
-        // Action buttons: map to the same keys the keyboard sets.
+        // Touch events (iOS Safari fallback / parallel path)
+        joy.addEventListener('touchstart', e => {
+            joyActive = true;
+            recomputeCenter();
+            const t = e.changedTouches[0];
+            if (t) updateJoy(t.clientX, t.clientY);
+            e.preventDefault();
+        }, { passive: false });
+        joy.addEventListener('touchmove', e => {
+            const t = e.changedTouches[0];
+            if (t) updateJoy(t.clientX, t.clientY);
+            e.preventDefault();
+        }, { passive: false });
+        joy.addEventListener('touchend',    e => { endJoy(); e.preventDefault(); }, { passive: false });
+        joy.addEventListener('touchcancel', e => { endJoy(); });
+
+        // Action buttons: pointer + touch + mouse handlers all map to the same key state.
         function bindBtn(el, key) {
             if (!el) return;
-            const down = e => {
-                keys[key] = true;
-                el.classList.add('pressed');
+            const press = () => { keys[key] = true; el.classList.add('pressed'); };
+            const release = () => { keys[key] = false; el.classList.remove('pressed'); };
+            el.addEventListener('pointerdown', e => {
+                press();
                 try { el.setPointerCapture(e.pointerId); } catch (_) {}
                 e.preventDefault();
-            };
-            const up = e => {
-                keys[key] = false;
-                el.classList.remove('pressed');
-            };
-            el.addEventListener('pointerdown', down);
-            el.addEventListener('pointerup', up);
-            el.addEventListener('pointercancel', up);
-            el.addEventListener('pointerleave', up);
-            // Block iOS double-tap zoom on the button.
-            el.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+            });
+            el.addEventListener('pointerup',     release);
+            el.addEventListener('pointercancel', release);
+            el.addEventListener('pointerleave',  release);
+            el.addEventListener('touchstart', e => { press();   e.preventDefault(); }, { passive: false });
+            el.addEventListener('touchend',   e => { release(); e.preventDefault(); }, { passive: false });
+            el.addEventListener('touchcancel', release);
+            el.addEventListener('mousedown',  e => { press();   e.preventDefault(); });
+            el.addEventListener('mouseup',    release);
+            el.addEventListener('mouseleave', release);
         }
         bindBtn(document.getElementById('btn-fire'), ' ');
         bindBtn(document.getElementById('btn-bomb'), 'f');
 
         const pauseBtn = document.getElementById('btn-pause');
         if (pauseBtn) {
-            pauseBtn.addEventListener('click', e => {
+            const togglePause = e => {
                 paused = !paused;
-                e.preventDefault();
-            });
-            pauseBtn.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+                if (e) e.preventDefault();
+            };
+            pauseBtn.addEventListener('click', togglePause);
+            pauseBtn.addEventListener('touchstart', togglePause, { passive: false });
         }
 
         // Stop the page from scrolling/zooming when interacting with the canvas itself.
