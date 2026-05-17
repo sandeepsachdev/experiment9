@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>Raid on Bungeling Bay</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -26,6 +29,17 @@
                 <div class="hud-label">RADAR</div>
                 <canvas id="minimap" width="160" height="160"></canvas>
             </div>
+
+            <div id="touch-controls" aria-hidden="true">
+                <div id="joystick">
+                    <div id="joystick-knob"></div>
+                </div>
+                <div id="touch-buttons">
+                    <button class="touch-btn" id="btn-bomb" type="button">BOMB</button>
+                    <button class="touch-btn" id="btn-fire" type="button">FIRE</button>
+                </div>
+                <button class="touch-btn-small" id="btn-pause" type="button">II</button>
+            </div>
             <div id="overlay" class="overlay">
                 <div class="overlay-card">
                     <h2 id="overlay-title">READY FOR DEPLOYMENT</h2>
@@ -35,11 +49,10 @@
                         a doomsday weapon. Destroy them all.
                     </p>
                     <ul class="controls">
-                        <li><b>W A S D</b> or <b>Arrow Keys</b> — Fly</li>
-                        <li><b>Space</b> — Machine guns (also chips factories)</li>
-                        <li><b>F</b> — Drop bomb (2 bombs = 1 factory down)</li>
-                        <li><b>Land on the carrier</b> (hover slowly over it) — Rearm &amp; repair</li>
-                        <li><b>P</b> — Pause</li>
+                        <li><b>W A S D</b> or <b>Arrows</b> — Fly  &middot;  <b>Space</b> Fire  &middot;  <b>F</b> Bomb  &middot;  <b>P</b> Pause</li>
+                        <li><b>Mobile:</b> on-screen joystick (left) + FIRE / BOMB buttons (right)</li>
+                        <li>Bombs are the main weapon -- 2 bombs drop a factory. Machine guns chip too.</li>
+                        <li>Hover slowly over the carrier to rearm &amp; repair.</li>
                     </ul>
                     <button id="start-btn">START MISSION</button>
                 </div>

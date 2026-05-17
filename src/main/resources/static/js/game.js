@@ -37,6 +37,97 @@
     });
     window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
+    // ---- Touch controls (joystick + buttons) ----
+    initTouchControls();
+
+    function initTouchControls() {
+        const joy = document.getElementById('joystick');
+        const knob = document.getElementById('joystick-knob');
+        let joyPointerId = null;
+        let joyCenter = null;
+        const MAX_KNOB = 45;
+        const MOVE_THRESHOLD = 12;
+
+        function clearJoyKeys() {
+            keys['w'] = false; keys['a'] = false; keys['s'] = false; keys['d'] = false;
+        }
+
+        function updateJoy(clientX, clientY) {
+            const dx = clientX - joyCenter.x;
+            const dy = clientY - joyCenter.y;
+            const len = Math.hypot(dx, dy);
+            const kx = len > MAX_KNOB ? dx / len * MAX_KNOB : dx;
+            const ky = len > MAX_KNOB ? dy / len * MAX_KNOB : dy;
+            knob.style.transform = `translate(${kx}px, ${ky}px)`;
+            keys['w'] = dy < -MOVE_THRESHOLD;
+            keys['s'] = dy >  MOVE_THRESHOLD;
+            keys['a'] = dx < -MOVE_THRESHOLD;
+            keys['d'] = dx >  MOVE_THRESHOLD;
+        }
+
+        joy.addEventListener('pointerdown', e => {
+            joyPointerId = e.pointerId;
+            joy.setPointerCapture(e.pointerId);
+            const r = joy.getBoundingClientRect();
+            joyCenter = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+            updateJoy(e.clientX, e.clientY);
+            e.preventDefault();
+        });
+        joy.addEventListener('pointermove', e => {
+            if (e.pointerId !== joyPointerId) return;
+            updateJoy(e.clientX, e.clientY);
+            e.preventDefault();
+        });
+        function endJoy(e) {
+            if (e.pointerId !== joyPointerId) return;
+            joyPointerId = null;
+            knob.style.transform = '';
+            clearJoyKeys();
+        }
+        joy.addEventListener('pointerup', endJoy);
+        joy.addEventListener('pointercancel', endJoy);
+        joy.addEventListener('pointerleave', endJoy);
+
+        // Action buttons: map to the same keys the keyboard sets.
+        function bindBtn(el, key) {
+            if (!el) return;
+            const down = e => {
+                keys[key] = true;
+                el.classList.add('pressed');
+                try { el.setPointerCapture(e.pointerId); } catch (_) {}
+                e.preventDefault();
+            };
+            const up = e => {
+                keys[key] = false;
+                el.classList.remove('pressed');
+            };
+            el.addEventListener('pointerdown', down);
+            el.addEventListener('pointerup', up);
+            el.addEventListener('pointercancel', up);
+            el.addEventListener('pointerleave', up);
+            // Block iOS double-tap zoom on the button.
+            el.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+        }
+        bindBtn(document.getElementById('btn-fire'), ' ');
+        bindBtn(document.getElementById('btn-bomb'), 'f');
+
+        const pauseBtn = document.getElementById('btn-pause');
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', e => {
+                paused = !paused;
+                e.preventDefault();
+            });
+            pauseBtn.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+        }
+
+        // Stop the page from scrolling/zooming when interacting with the canvas itself.
+        const cnv = document.getElementById('game');
+        if (cnv) {
+            cnv.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+            cnv.addEventListener('touchmove',  e => e.preventDefault(), { passive: false });
+        }
+    }
+
     // -- World entities --
     let player, carrier, islands, factories, enemies, bullets, bombs, particles, popups;
     let score = 0;
